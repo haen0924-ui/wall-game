@@ -105,6 +105,7 @@ input[type=text]{width:100%;font-family:var(--body);font-size:18px;padding:12px 
 .countdown{position:fixed;inset:0;background:rgba(245,239,227,.94);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:20;text-align:center}
 .cd-num{font-family:var(--display);font-size:150px;line-height:1;color:var(--ink);text-shadow:6px 6px 0 var(--yellow,#FFC93C)}
 .countdown p{margin:10px 0 0;font-size:18px;font-weight:700;opacity:.75}
+.txt{width:100%;font-size:18px;padding:12px;border:3px solid var(--ink);border-radius:12px;margin-bottom:10px;font-family:inherit;box-sizing:border-box}
 .modal{position:fixed;inset:0;background:rgba(31,27,45,.55);display:grid;place-items:center;padding:16px;z-index:9}
 .mcard{background:var(--white);border:3px solid var(--ink);border-radius:20px;padding:20px;max-width:440px;width:100%;box-shadow:6px 6px 0 var(--ink)}
 .mcard h3{font-family:var(--display);font-weight:400;font-size:24px;margin:0 0 6px;line-height:1.3}
@@ -137,6 +138,8 @@ const COLORS = ['#FF4F8B','#2B59C3','#2E9E6A','#FFC93C','#7A4FD0','#E0342B','#FF
 
 /* 문제 풀 (사람마다 이 중에서 무작위로 5개를 받습니다) */
 const POOL = [
+  { q: '농아인의 날은 언제일까요?', c: ['2월 3일','6월 3일','9월 23일','10월 9일'], a: 1, video: 'videos/1.mp4', must: true },
+  { q: '한국 최초의 농학교의 이름은?', c: [], a: ['제생원 맹아부'], type: 'text', video: 'videos/2.mp4', must: true },
   { q: '수어에 대한 설명으로 옳은 것은?', c: ['나라마다 수어가 다르다','수어는 전 세계 공통어다','한국수어는 한글을 손으로 옮긴 것이다','농인은 모두 국제수어 하나만 쓴다'], a: 0 },
   { q: '한국수화언어법이 제정된 날은?', c: ['2016년 2월 3일','2016년 8월 4일','2013년 2월 3일','2020년 10월 31일'], a: 0 },
   { q: '수어 문법에 대한 설명으로 옳은 것은?', c: ['수어는 손으로만 표현한다','얼굴 표정도 수어 문법의 일부다','수어로는 추상적인 개념을 표현할 수 없다','수어는 몸짓을 모아 놓은 것에 불과하다'], a: 1 },
@@ -149,8 +152,6 @@ const POOL = [
   { q: '한국수화언어법이 인정한 것은?', c: ['한국수어','영어','국제수어','한글 점자'], a: 0 },
   { q: '소리를 듣고 음성언어를 쓰는 사람은?', c: ['농인','청인','수어통역사','비수지 신호'], a: 1 },
   { q: '수어 교육 현장에서 가장 중요한 태도는?', c: ['수어는 쉬우니 대충 배운다','농문화를 존중하고 함께 배운다','농인에게는 말을 크게 하면 된다','손동작만 외우면 충분하다'], a: 1 },
-  // 테스트용 영상 문제: 모든 참가자에게 항상 나옵니다. 영상 파일(sunqian.mp4)을 배포 사이트 최상위에 같이 올려야 합니다.
-  { q: '이 영상 속 사람의 이름은?', c: ['정환','유진','손청','강석'], a: 2, video: 'sunqian.mp4', must: true }
 ];
 
 /* ===== 공통 유틸 ===== */
@@ -688,11 +689,19 @@ function openQ(i) {
   $('mvideo').innerHTML = item.video
     ? '<video src="' + esc(item.video) + '" controls playsinline muted preload="auto" style="width:100%;border-radius:12px;border:2px solid #1F1B2D;margin-bottom:8px"></video>'
     : '';
-  $('mopts').innerHTML = it.order.map((k, ci) =>
-    '<button class="opt" data-c="' + ci + '">' + esc(item.c[k]) + '</button>').join('');
-  $('mopts').querySelectorAll('.opt').forEach(b => {
-    b.onclick = () => answer(Number(b.dataset.c));
-  });
+  if (item.type === 'text') {
+    // 주관식: 글자를 직접 입력합니다
+    $('mopts').innerHTML = '<input id="ans" class="txt" autocomplete="off" placeholder="정답 입력 · Type the answer">' +
+      '<button class="opt" id="sendAns">확인 · OK</button>';
+    $('sendAns').onclick = () => answerText($('ans').value);
+    $('ans').onkeydown = e => { if (e.key === 'Enter') answerText($('ans').value); };
+  } else {
+    $('mopts').innerHTML = it.order.map((k, ci) =>
+      '<button class="opt" data-c="' + ci + '">' + esc(item.c[k]) + '</button>').join('');
+    $('mopts').querySelectorAll('.opt').forEach(b => {
+      b.onclick = () => answer(Number(b.dataset.c));
+    });
+  }
   $('mmsg').textContent = '';
   $('modal').classList.remove('hidden');
 }
@@ -700,12 +709,24 @@ function openQ(i) {
 function answer(ci) {
   const it = qset[currentQ];
   const ok = it.order[ci] === POOL[it.qi].a;
-  if (!ok) {
-    $('mmsg').textContent = '아쉬워요. 다시 골라 보세요.';
-    const m = $('modal').querySelector('.mcard');
-    m.classList.remove('shake'); void m.offsetWidth; m.classList.add('shake');
-    return;
-  }
+  if (!ok) return wrongAnswer();
+  correctAnswer();
+}
+
+function answerText(v) {
+  const norm = t => String(t).replace(/\s+/g, '').toLowerCase();
+  const ok = POOL[qset[currentQ].qi].a.map(norm).includes(norm(v));
+  if (!ok) return wrongAnswer();
+  correctAnswer();
+}
+
+function wrongAnswer() {
+  $('mmsg').textContent = '아쉬워요. 다시 해 보세요.';
+  const m = $('modal').querySelector('.mcard');
+  m.classList.remove('shake'); void m.offsetWidth; m.classList.add('shake');
+}
+
+function correctAnswer() {
   solved.push(currentQ);
   $('modal').classList.add('hidden');
   me.paused = false;
