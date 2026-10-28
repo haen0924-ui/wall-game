@@ -565,7 +565,8 @@ function makeQset() {
   const must = POOL.map((p, i) => (p.must ? i : -1)).filter(i => i >= 0);
   const rest = shuffle(POOL.map((_, i) => i).filter(i => !must.includes(i)));
   const picked = shuffle([...must, ...rest].slice(0, HOT_COUNT));
-  return picked.map(qi => ({ qi, order: shuffle([0, 1, 2, 3]) }));
+  // 보기 개수는 문제마다 다를 수 있으니 (3개, 4개 등) 그 문제의 보기 수만큼 섞습니다
+  return picked.map(qi => ({ qi, order: shuffle(POOL[qi].c.map((_, k) => k)) }));
 }
 
 async function join() {
