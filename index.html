@@ -477,6 +477,7 @@ function renderTV() {
 }
 
 function drawTV() {
+  drawHot($('tvframe'), false);
   drawAvatars($('tvframe'));
   const ps = people();
   $('stat').textContent = '들어온 사람 ' + ps.length + '명 · 탈출 ' + ps.filter(p => p.done).length + '명';
@@ -682,8 +683,20 @@ function openQ(i) {
   const item = POOL[it.qi];
   $('mq').textContent = item.q;
   $('mvideo').innerHTML = item.video
-    ? '<video src="' + esc(item.video) + '" controls playsinline muted preload="auto" style="width:100%;border-radius:12px;border:2px solid #1F1B2D;margin-bottom:8px"></video>'
+    ? '<video src="' + esc(item.video) + '" controls autoplay playsinline muted preload="auto" style="width:100%;border-radius:12px;border:2px solid #1F1B2D;margin-bottom:8px"></video>'
     : '';
+  // 처음에는 한글 문제와 보기를 숨기고, 영상이 끝나거나 실패하거나 5초가 지나면 보여 줍니다
+  clearTimeout(revealTimer);
+  $('mq').classList.add('hidden');
+  $('mopts').classList.add('hidden');
+  if (item.video) {
+    const v = $('mvideo').querySelector('video');
+    v.addEventListener('ended', showQText);
+    v.addEventListener('error', showQText);
+    revealTimer = setTimeout(showQText, 5000);
+  } else {
+    showQText();
+  }
   if (item.type === 'text') {
     // 주관식: 글자를 직접 입력합니다
     $('mopts').innerHTML = '<input id="ans" class="txt" autocomplete="off" placeholder="정답 입력 · Type the answer">' +
@@ -699,6 +712,13 @@ function openQ(i) {
   }
   $('mmsg').textContent = '';
   $('modal').classList.remove('hidden');
+}
+
+let revealTimer = null;
+function showQText() {
+  clearTimeout(revealTimer);
+  $('mq').classList.remove('hidden');
+  $('mopts').classList.remove('hidden');
 }
 
 function answer(ci) {
