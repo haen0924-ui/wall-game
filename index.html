@@ -59,13 +59,13 @@ button:disabled{opacity:.4;cursor:default}
 
 /* 문제 아이콘 */
 /* 문제 표시: 동그라미 없이 굵은 Q 글자만 캐릭터 위에 놓습니다 */
-.hot{position:absolute;transform:translate(-50%,-50%);width:auto;height:auto;padding:4px;margin:0;
+.hot{position:absolute;transform:translate(-50%,-50%);display:block;box-sizing:content-box;width:40px;height:40px;min-width:0;min-height:0;max-width:none;max-height:none;padding:0;margin:0;
   background:none;border:none;box-shadow:none;color:var(--ink);
-  font-family:var(--display);font-size:34px;font-weight:900;line-height:1;text-align:center;white-space:nowrap;
+  font-family:var(--display);font-size:34px;font-weight:900;line-height:40px;text-align:center;white-space:nowrap;overflow:visible;
   text-shadow:2px 0 #fff,-2px 0 #fff,0 2px #fff,0 -2px #fff,2px 2px #fff,-2px -2px #fff,2px -2px #fff,-2px 2px #fff;
   animation:pulse 1.8s ease-in-out infinite;z-index:1;cursor:pointer;user-select:none}
 .hot.done{color:#3a7d44;animation:none;opacity:.8}
-.hot.tv{pointer-events:none;animation:none;z-index:4}
+.hot.tvq{pointer-events:none;animation:none;z-index:4}
 /* 큰 화면의 Q는 움직이지 않고, 걸어다니는 아바타보다 위에 항상 보입니다 */
 @keyframes pulse{0%,100%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-50%) scale(1.08)}}
 
@@ -427,7 +427,7 @@ function drawHot(box, clickable) {
     b.setAttribute('role', clickable ? 'button' : 'img');
     b.setAttribute('aria-label', '문제 ' + (i + 1));
     const isDone = clickable && solved.includes(i);
-    b.className = 'hot' + (isDone ? ' done' : '') + (clickable ? '' : ' tv');
+    b.className = 'hot' + (isDone ? ' done' : '') + (clickable ? '' : ' tvq');
     b.style.left = h.x + '%';
     b.style.top = h.y + '%';
     if (isDone) b.textContent = '✓';
